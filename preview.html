@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CM Reviewer - 動画データプレビュー</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #212529;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .controls {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            margin-bottom: 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        select, input {
+            padding: 0.5rem 1rem;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            transition: border-color 0.2s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #495057;
+        }
+
+        input[type="checkbox"] {
+            margin-right: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            background: #495057;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background: #343a40;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #495057;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 2rem;
+        }
+
+        @media (min-width: 1100px) {
+            .video-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .video-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #dee2e6;
+            transition: border-color 0.2s ease;
+            position: relative;
+        }
+
+        .video-card:hover {
+            border-color: #adb5bd;
+        }
+
+        .video-card.low-probability {
+            opacity: 0.6;
+            filter: grayscale(0.3);
+        }
+
+        .thumbnail-container {
+            position: relative;
+            width: 100%;
+            height: 225px;
+            overflow: hidden;
+        }
+
+        .thumbnail {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: opacity 0.2s;
+        }
+
+        .thumbnail-container a {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .thumbnail:hover {
+            opacity: 0.9;
+        }
+
+        .cm-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .cm-high { background: #dc3545; }
+        .cm-medium { background: #fd7e14; }
+        .cm-low { background: #0d6efd; }
+        .cm-none { background: #6c757d; }
+
+        .duration-badge {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        .video-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #212529;
+            margin-bottom: 0.75rem;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .channel-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+        .description {
+            font-size: 0.85rem;
+            color: #495057;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+
+        .analysis-section {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .analysis-title {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .analysis-text {
+            font-size: 0.85rem;
+            color: #495057;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+            white-space: pre-wrap;
+        }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: 120px 1fr 1fr;
+            gap: 1px;
+            background: #dee2e6;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .analysis-header {
+            background: #495057;
+            color: white;
+            padding: 0.75rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .analysis-row-header {
+            background: #6c757d;
+            color: white;
+            padding: 0.75rem;
+            font-weight: 600;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .analysis-cell {
+            background: white;
+            padding: 1rem;
+            font-size: 0.85rem;
+            color: #495057;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .analysis-cell:empty::after {
+            content: "—";
+            color: #adb5bd;
+            font-style: italic;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 3rem;
+        }
+
+        .pagination button {
+            padding: 0.5rem 1rem;
+            border: 1px solid #ced4da;
+            background: white;
+            color: #495057;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            border-color: #495057;
+            background: #f8f9fa;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination .current-page {
+            background: #495057;
+            color: white;
+            border-color: #495057;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 4rem;
+            color: #6c757d;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 4px;
+            border: 1px solid #f5c6cb;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem;
+            color: #6c757d;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #495057;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .video-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .filter-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>CM Reviewer</h1>
+        <p>動画データプレビュー・解析システム</p>
+    </div>
+
+    <div class="container">
+        <div class="controls">
+            <div class="filter-group">
+                <label for="channelFilter">チャンネル:</label>
+                <select id="channelFilter">
+                    <option value="">すべて</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="cmFilter">CM確率:</label>
+                <select id="cmFilter">
+                    <option value="">すべて</option>
+                    <option value="high">95%以上</option>
+                    <option value="medium">50-94%</option>
+                    <option value="low">1-49%</option>
+                    <option value="none">未解析</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="sortBy">並び順:</label>
+                <select id="sortBy">
+                    <option value="date">公開日時（新しい順）</option>
+                    <option value="cm">CM確率（高い順）</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label>
+                    <input type="checkbox" id="excludeUnanalyzed" checked>
+                    未解析を除外
+                </label>
+            </div>
+            
+            <button class="btn" onclick="loadData()">更新</button>
+        </div>
+
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalVideos">-</div>
+                <div class="stat-label">総動画数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="analyzedVideos">-</div>
+                <div class="stat-label">解析済み</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="highCmVideos">-</div>
+                <div class="stat-label">CM確度95%以上</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="avgCmProbability">-</div>
+                <div class="stat-label">平均CM確率</div>
+            </div>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            <p>データを読み込み中...</p>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div id="videoGrid" class="video-grid"></div>
+
+        <div class="pagination" id="pagination" style="display: none;"></div>
+    </div>
+
+    <script>
+        // Configuration
+        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwH79FXuiOUq1ppJ296C731RFJ-JD7gGMCTWJT2pPahO0m0Pe2nZZL_E_0MHxxkuknQWA/exec'; // GASのWebアプリURLを設定してください
+        const ITEMS_PER_PAGE = 12;
+
+        let allVideos = [];
+        let filteredVideos = [];
+        let currentPage = 1;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            document.getElementById('channelFilter').addEventListener('change', applyFilters);
+            document.getElementById('cmFilter').addEventListener('change', applyFilters);
+            document.getElementById('sortBy').addEventListener('change', applyFilters);
+            document.getElementById('excludeUnanalyzed').addEventListener('change', applyFilters);
+        }
+
+        async function loadData() {
+            showLoading(true);
+            hideError();
+            
+            try {
+                if (!GAS_WEB_APP_URL || GAS_WEB_APP_URL.includes('YOUR_DEPLOYMENT_ID')) {
+                    throw new Error('Google Apps ScriptのWebアプリURLが設定されていません。');
+                }
+                
+                const data = await fetchSpreadsheetData();
+                allVideos = data;
+                populateChannelFilter();
+                applyFilters();
+                updateStats();
+            } catch (error) {
+                showError('データの読み込みに失敗しました: ' + error.message + '\n\nGoogle Apps ScriptのWebアプリケーションが正しく設定されているか確認してください。');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function fetchSpreadsheetData() {
+            try {
+                // Google Apps ScriptのWebアプリケーションからデータを取得
+                const response = await fetch(`${GAS_WEB_APP_URL}?action=getVideoData`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+                
+                return parseVideoData(result.data);
+            } catch (error) {
+                console.error('データ取得エラー:', error);
+                throw error;
+            }
+        }
+
+        function parseVideoData(videos) {
+            return videos.map(video => ({
+                ...video,
+                publishedAt: video.publishedAt ? new Date(video.publishedAt) : new Date(),
+                fetchedAt: video.fetchedAt ? new Date(video.fetchedAt) : new Date(),
+                analysisDate: video.analysisDate ? new Date(video.analysisDate) : null,
+                duration: parseInt(video.duration) || 0,
+                viewCount: parseInt(video.viewCount) || 0,
+                likeCount: parseInt(video.likeCount) || 0,
+                commentCount: parseInt(video.commentCount) || 0,
+                cmProbability: video.cmProbability !== null && video.cmProbability !== '' ? parseInt(video.cmProbability) : null,
+                errorCount: parseInt(video.errorCount) || 0
+            }));
+        }
+
+        function populateChannelFilter() {
+            const channelFilter = document.getElementById('channelFilter');
+            const channels = [...new Set(allVideos.map(v => v.channelTitle))].sort();
+            
+            // Clear existing options except "すべて"
+            channelFilter.innerHTML = '<option value="">すべて</option>';
+            
+            channels.forEach(channel => {
+                const option = document.createElement('option');
+                option.value = channel;
+                option.textContent = channel;
+                channelFilter.appendChild(option);
+            });
+        }
+
+        function applyFilters() {
+            const channelFilter = document.getElementById('channelFilter').value;
+            const cmFilter = document.getElementById('cmFilter').value;
+            const sortBy = document.getElementById('sortBy').value;
+            const excludeUnanalyzed = document.getElementById('excludeUnanalyzed').checked;
+
+            filteredVideos = allVideos.filter(video => {
+                // 未解析除外フィルター
+                if (excludeUnanalyzed && (video.cmProbability === null || video.cmProbability === undefined || video.cmProbability === '')) {
+                    return false;
+                }
+
+                // Channel filter
+                if (channelFilter && video.channelTitle !== channelFilter) {
+                    return false;
+                }
+
+                // CM probability filter
+                if (cmFilter) {
+                    const cmProb = video.cmProbability;
+                    switch (cmFilter) {
+                        case 'high':
+                            return cmProb >= 95;
+                        case 'medium':
+                            return cmProb >= 50 && cmProb < 95;
+                        case 'low':
+                            return cmProb >= 1 && cmProb < 50;
+                        case 'none':
+                            return cmProb === null || cmProb === undefined;
+                    }
+                }
+
+                return true;
+            });
+
+            // Sort
+            filteredVideos.sort((a, b) => {
+                switch (sortBy) {
+                    case 'date':
+                        return new Date(b.publishedAt) - new Date(a.publishedAt);
+                    case 'cm':
+                        return (b.cmProbability || 0) - (a.cmProbability || 0);
+                    default:
+                        return 0;
+                }
+            });
+
+            currentPage = 1;
+            renderVideos();
+            renderPagination();
+        }
+
+        function renderVideos() {
+            const grid = document.getElementById('videoGrid');
+            const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+            const endIndex = startIndex + ITEMS_PER_PAGE;
+            const pageVideos = filteredVideos.slice(startIndex, endIndex);
+
+            if (pageVideos.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <h3>動画が見つかりません</h3>
+                        <p>フィルター条件を変更してみてください。</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = pageVideos.map(video => createVideoCard(video)).join('');
+        }
+
+        function createVideoCard(video) {
+            const cmProb = video.cmProbability;
+            const isLowProbability = cmProb !== null && cmProb < 95;
+            
+            let cmBadgeClass = 'cm-none';
+            let cmBadgeText = '未解析';
+            
+            if (cmProb !== null) {
+                if (cmProb >= 95) {
+                    cmBadgeClass = 'cm-high';
+                    cmBadgeText = `${cmProb}%`;
+                } else if (cmProb >= 50) {
+                    cmBadgeClass = 'cm-medium';
+                    cmBadgeText = `${cmProb}%`;
+                } else {
+                    cmBadgeClass = 'cm-low';
+                    cmBadgeText = `${cmProb}%`;
+                }
+            }
+
+            const duration = formatDuration(video.duration);
+            const publishDate = new Date(video.publishedAt).toLocaleDateString('ja-JP');
+
+            const hasAnalysis = video.strategyStrength || video.ideaStrength || video.expressionStrength;
+
+            return `
+                <div class="video-card ${isLowProbability ? 'low-probability' : ''}">
+                    <div class="thumbnail-container">
+                        <a href="${video.url}" target="_blank" rel="noopener noreferrer">
+                            <img src="${video.thumbnailUrl || 'https://via.placeholder.com/480x360/6c757d/ffffff?text=No+Image'}" 
+                                 alt="${video.title}" 
+                                 class="thumbnail"
+                                 onerror="this.src='https://via.placeholder.com/480x360/6c757d/ffffff?text=No+Image'">
+                        </a>
+                        <div class="cm-badge ${cmBadgeClass}">${cmBadgeText}</div>
+                        <div class="duration-badge">${duration}</div>
+                    </div>
+                    
+                    <div class="card-content">
+                        <h3 class="video-title">${video.title}</h3>
+                        
+                        <div class="channel-info">
+                            <span>📺</span>
+                            <span>${video.channelTitle}</span>
+                            <span>•</span>
+                            <span>${publishDate}</span>
+                        </div>
+                        
+                        <p class="description">${video.description}</p>
+                        
+                        ${hasAnalysis ? `
+                            <div class="analysis-grid">
+                                <div class="analysis-header"></div>
+                                <div class="analysis-header">優れた点</div>
+                                <div class="analysis-header">課題仮説</div>
+                                
+                                <div class="analysis-row-header">🎯<br>戦略的<br>観点</div>
+                                <div class="analysis-cell">${video.strategyStrength || ''}</div>
+                                <div class="analysis-cell">${video.strategyHypothesis || ''}</div>
+                                
+                                <div class="analysis-row-header">💡<br>企画的<br>観点</div>
+                                <div class="analysis-cell">${video.ideaStrength || ''}</div>
+                                <div class="analysis-cell">${video.ideaHypothesis || ''}</div>
+                                
+                                <div class="analysis-row-header">🎨<br>表現的<br>観点</div>
+                                <div class="analysis-cell">${video.expressionStrength || ''}</div>
+                                <div class="analysis-cell">${video.expressionHypothesis || ''}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderPagination() {
+            const pagination = document.getElementById('pagination');
+            const totalPages = Math.ceil(filteredVideos.length / ITEMS_PER_PAGE);
+            
+            if (totalPages <= 1) {
+                pagination.style.display = 'none';
+                return;
+            }
+            
+            pagination.style.display = 'flex';
+            
+            let paginationHTML = `
+                <button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
+                    ← 前へ
+                </button>
+            `;
+            
+            for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+                paginationHTML += `
+                    <button onclick="changePage(${i})" class="${i === currentPage ? 'current-page' : ''}">
+                        ${i}
+                    </button>
+                `;
+            }
+            
+            paginationHTML += `
+                <button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
+                    次へ →
+                </button>
+            `;
+            
+            pagination.innerHTML = paginationHTML;
+        }
+
+        function changePage(page) {
+            const totalPages = Math.ceil(filteredVideos.length / ITEMS_PER_PAGE);
+            if (page < 1 || page > totalPages) return;
+            
+            currentPage = page;
+            renderVideos();
+            renderPagination();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function updateStats() {
+            const total = allVideos.length;
+            const analyzed = allVideos.filter(v => v.cmProbability !== null).length;
+            const highCm = allVideos.filter(v => v.cmProbability >= 95).length;
+            const avgCm = analyzed > 0 ? 
+                Math.round(allVideos.filter(v => v.cmProbability !== null)
+                    .reduce((sum, v) => sum + v.cmProbability, 0) / analyzed) : 0;
+
+            document.getElementById('totalVideos').textContent = total;
+            document.getElementById('analyzedVideos').textContent = analyzed;
+            document.getElementById('highCmVideos').textContent = highCm;
+            document.getElementById('avgCmProbability').textContent = avgCm + '%';
+        }
+
+        function formatDuration(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toString();
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
