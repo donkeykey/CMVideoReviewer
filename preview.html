@@ -320,6 +320,10 @@
             overflow: hidden;
             margin-top: 1rem;
         }
+        
+        .analysis-mobile-row {
+            display: none;
+        }
 
         .analysis-header {
             background: #495057;
@@ -449,6 +453,59 @@
             .filter-group {
                 flex-direction: column;
                 align-items: stretch;
+            }
+            
+            /* モバイルでは分析グリッドを縦積みにする */
+            .analysis-grid {
+                display: none;
+            }
+            
+            .analysis-mobile-row {
+                display: block;
+                margin-top: 1rem;
+            }
+            
+            .analysis-section-mobile {
+                background: white;
+                border: 1px solid #dee2e6;
+                border-radius: 6px;
+                margin-bottom: 1rem;
+                overflow: hidden;
+            }
+            
+            .analysis-section-header {
+                background: #6c757d;
+                color: white;
+                padding: 0.75rem;
+                font-weight: 600;
+                font-size: 0.9rem;
+                text-align: center;
+            }
+            
+            .analysis-content-mobile {
+                padding: 1rem;
+            }
+            
+            .analysis-item-mobile {
+                margin-bottom: 0.75rem;
+            }
+            
+            .analysis-item-mobile:last-child {
+                margin-bottom: 0;
+            }
+            
+            .analysis-label-mobile {
+                font-weight: 600;
+                color: #495057;
+                margin-bottom: 0.25rem;
+                font-size: 0.85rem;
+            }
+            
+            .analysis-text-mobile {
+                color: #495057;
+                line-height: 1.5;
+                font-size: 0.85rem;
+                white-space: pre-wrap;
             }
         }
     </style>
@@ -773,6 +830,7 @@
                         ` : ''}
                         
                         ${hasAnalysis ? `
+                            <!-- デスクトップ用グリッド -->
                             <div class="analysis-grid">
                                 <div class="analysis-header"></div>
                                 <div class="analysis-header">優れた点</div>
@@ -789,6 +847,51 @@
                                 <div class="analysis-row-header">🎨<br>表現的<br>観点</div>
                                 <div class="analysis-cell">${video.expressionStrength || ''}</div>
                                 <div class="analysis-cell">${video.expressionHypothesis || ''}</div>
+                            </div>
+                            
+                            <!-- モバイル用レイアウト -->
+                            <div class="analysis-mobile-row">
+                                <div class="analysis-section-mobile">
+                                    <div class="analysis-section-header">🎯 戦略的観点</div>
+                                    <div class="analysis-content-mobile">
+                                        <div class="analysis-item-mobile">
+                                            <div class="analysis-label-mobile">優れた点</div>
+                                            <div class="analysis-text-mobile">${video.strategyStrength || '—'}</div>
+                                        </div>
+                                        <div class="analysis-item-mobile">
+                                            <div class="analysis-label-mobile">課題仮説</div>
+                                            <div class="analysis-text-mobile">${video.strategyHypothesis || '—'}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="analysis-section-mobile">
+                                    <div class="analysis-section-header">💡 企画的観点</div>
+                                    <div class="analysis-content-mobile">
+                                        <div class="analysis-item-mobile">
+                                            <div class="analysis-label-mobile">優れた点</div>
+                                            <div class="analysis-text-mobile">${video.ideaStrength || '—'}</div>
+                                        </div>
+                                        <div class="analysis-item-mobile">
+                                            <div class="analysis-label-mobile">課題仮説</div>
+                                            <div class="analysis-text-mobile">${video.ideaHypothesis || '—'}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="analysis-section-mobile">
+                                    <div class="analysis-section-header">🎨 表現的観点</div>
+                                    <div class="analysis-content-mobile">
+                                        <div class="analysis-item-mobile">
+                                            <div class="analysis-label-mobile">優れた点</div>
+                                            <div class="analysis-text-mobile">${video.expressionStrength || '—'}</div>
+                                        </div>
+                                        <div class="analysis-item-mobile">
+                                            <div class="analysis-label-mobile">課題仮説</div>
+                                            <div class="analysis-text-mobile">${video.expressionHypothesis || '—'}</div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         ` : ''}
                     </div>
