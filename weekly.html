@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CM Reviewer - 週次トレンドプレビュー</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #212529;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .controls {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            margin-bottom: 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        select, input {
+            padding: 0.5rem 1rem;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            transition: border-color 0.2s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #495057;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            background: #495057;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: background-color 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            background: #343a40;
+        }
+
+        .btn-primary {
+            background: #007bff;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+
+        .analysis-list {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            margin-bottom: 2rem;
+        }
+
+        .analysis-item {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .analysis-item:last-child {
+            border-bottom: none;
+        }
+
+        .analysis-info h3 {
+            margin-bottom: 0.5rem;
+            color: #2c3e50;
+        }
+
+        .analysis-meta {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .analysis-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .html-preview {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            overflow: hidden;
+        }
+
+        .preview-header {
+            background: #f8f9fa;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .preview-title {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .preview-content {
+            padding: 0;
+            height: 80vh;
+            overflow: auto;
+        }
+
+        .preview-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 4rem;
+            color: #6c757d;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 4px;
+            border: 1px solid #f5c6cb;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem;
+            color: #6c757d;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #495057;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .filter-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .analysis-item {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 1rem;
+            }
+
+            .preview-content {
+                height: 60vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>CM Reviewer</h1>
+        <p>週次トレンドプレビュー</p>
+    </div>
+
+    <div class="container">
+        <div class="controls">
+            <div class="filter-group">
+                <h2>📊 週次トレンド分析結果一覧</h2>
+                <p>各分析結果をクリックしてプレビューまたは新しいタブで表示できます</p>
+            </div>
+            
+            <div class="nav-links">
+                <a href="preview.html" class="btn btn-primary">📺 動画データプレビュー</a>
+                <button class="btn" onclick="loadAnalysisList()">🔄 更新</button>
+            </div>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            <p>データを読み込み中...</p>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div id="analysisList" class="analysis-list" style="display: none;"></div>
+
+        <div id="htmlPreview" class="html-preview" style="display: none;">
+            <div class="preview-header">
+                <div class="preview-title" id="previewTitle">HTMLプレビュー</div>
+                <div class="preview-actions">
+                    <button class="btn btn-primary" onclick="openInNewTab()">新しいタブで開く</button>
+                    <button class="btn" onclick="closePreview()">閉じる</button>
+                </div>
+            </div>
+            <div class="preview-content">
+                <iframe id="previewIframe" class="preview-iframe"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwH79FXuiOUq1ppJ296C731RFJ-JD7gGMCTWJT2pPahO0m0Pe2nZZL_E_0MHxxkuknQWA/exec';
+        
+        let currentAnalysisId = null;
+        let currentHtmlUrl = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('ページ読み込み完了');
+            loadAnalysisList();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            // イベントリスナーは動的に追加される分析リストボタンで処理
+        }
+
+        async function loadAnalysisList() {
+            showLoading(true);
+            hideError();
+            
+            try {
+                const response = await fetch(`${GAS_WEB_APP_URL}?action=getAnalysisList`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+                
+                console.log('分析リスト取得結果:', result.data);
+                
+                renderAnalysisList(result.data);
+                
+            } catch (error) {
+                console.error('分析リスト取得エラー:', error);
+                showError('分析リストの読み込みに失敗しました: ' + error.message);
+                
+            } finally {
+                showLoading(false);
+            }
+        }
+
+
+        function renderAnalysisList(analyses) {
+            const container = document.getElementById('analysisList');
+            
+            if (!analyses || analyses.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>分析結果が見つかりません</h3>
+                        <p>週次トレンド分析を実行してから再度お試しください。</p>
+                    </div>
+                `;
+                container.style.display = 'block';
+                return;
+            }
+
+            container.innerHTML = analyses.map(analysis => `
+                <div class="analysis-item">
+                    <div class="analysis-info">
+                        <h3>${analysis.analysisId}</h3>
+                        <div class="analysis-meta">
+                            作成日時: ${new Date(analysis.createdAt).toLocaleString('ja-JP')}
+                        </div>
+                    </div>
+                    <div class="analysis-actions">
+                        <button class="btn btn-primary" onclick="loadHtmlPreview('${analysis.analysisId}')">
+                            プレビュー
+                        </button>
+                        <button class="btn" onclick="openHtmlInNewTab('${analysis.analysisId}')">
+                            新しいタブで開く
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            
+            container.style.display = 'block';
+        }
+
+
+        async function loadHtmlPreview(analysisId) {
+            console.log('プレビュー開始:', analysisId);
+            currentAnalysisId = analysisId;
+            
+            try {
+                showLoading(true);
+                hideError();
+                
+                // スプレッドシートからHTMLコンテンツを取得
+                const requestUrl = `${GAS_WEB_APP_URL}?action=getLetterHtml&analysisId=${encodeURIComponent(analysisId)}`;
+                console.log('HTMLコンテンツ取得URL:', requestUrl);
+                
+                const response = await fetch(requestUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status}`);
+                }
+                
+                const htmlContent = await response.text();
+                console.log('取得したHTMLコンテンツ長:', htmlContent.length);
+                
+                // JSONエラーレスポンスかチェック
+                if (htmlContent.trim().startsWith('{') && htmlContent.includes('"error"')) {
+                    try {
+                        const errorData = JSON.parse(htmlContent);
+                        if (errorData.error) {
+                            throw new Error(errorData.error);
+                        }
+                    } catch (parseError) {
+                        // JSON解析エラーの場合はHTMLとして処理を続行
+                    }
+                }
+                
+                if (!htmlContent || htmlContent.trim().length === 0) {
+                    throw new Error('HTMLコンテンツが空です');
+                }
+                
+                console.log('HTMLプレビュー表示準備開始');
+                
+                // iframeにHTMLコンテンツを設定
+                const iframe = document.getElementById('previewIframe');
+                const blob = new Blob([htmlContent], { type: 'text/html; charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                
+                currentHtmlUrl = url;
+                
+                // プレビュー領域を表示
+                document.getElementById('previewTitle').textContent = `HTMLプレビュー - ${analysisId}`;
+                document.getElementById('htmlPreview').style.display = 'block';
+                
+                iframe.src = url;
+                
+                console.log('iframeにHTML設定完了');
+                
+                // Scroll to preview
+                setTimeout(() => {
+                    document.getElementById('htmlPreview').scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+                
+                // 分析リストを非表示
+                document.getElementById('analysisList').style.display = 'none';
+                
+                console.log('プレビュー表示完了');
+                
+            } catch (error) {
+                console.error('HTMLプレビュー読み込みエラー:', error);
+                showError('HTMLプレビューの読み込みに失敗しました: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function openHtmlInNewTab(analysisId) {
+            try {
+                showLoading(true);
+                
+                // スプレッドシートからHTMLコンテンツを取得
+                const response = await fetch(`${GAS_WEB_APP_URL}?action=getLetterHtml&analysisId=${encodeURIComponent(analysisId)}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status}`);
+                }
+                
+                const htmlContent = await response.text();
+                
+                // エラーレスポンスかチェック
+                if (htmlContent.includes('"error"')) {
+                    const errorData = JSON.parse(htmlContent);
+                    throw new Error(errorData.error);
+                }
+                
+                // 新しいタブでHTMLを表示
+                const newWindow = window.open('', '_blank');
+                newWindow.document.open();
+                newWindow.document.write(htmlContent);
+                newWindow.document.close();
+                
+            } catch (error) {
+                console.error('HTML表示エラー:', error);
+                showError('HTMLの表示に失敗しました: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function openInNewTab() {
+            if (currentHtmlUrl) {
+                window.open(currentHtmlUrl, '_blank');
+            }
+        }
+
+        function closePreview() {
+            document.getElementById('htmlPreview').style.display = 'none';
+            document.getElementById('analysisList').style.display = 'block';
+            currentAnalysisId = null;
+            currentHtmlUrl = null;
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
