@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CM Reviewer - 週次トレンド編集</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #212529;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 1rem 0;
+            text-align: center;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 300;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .controls {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            margin-bottom: 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        select, input {
+            padding: 0.5rem 1rem;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            transition: border-color 0.2s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #495057;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            background: #495057;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: background-color 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            background: #343a40;
+        }
+
+        .btn-primary {
+            background: #007bff;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            min-height: 80vh;
+        }
+
+        .left-panel, .right-panel {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background: #f8f9fa;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-title {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .panel-content {
+            padding: 0;
+            height: calc(80vh - 60px);
+            overflow: auto;
+        }
+
+        .video-list {
+            padding: 0;
+        }
+
+        .video-item {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            transition: background-color 0.2s;
+        }
+
+        .video-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .video-item:last-child {
+            border-bottom: none;
+        }
+
+        .video-item.checked {
+            background-color: #e8f5e8;
+            border-left: 4px solid #28a745;
+        }
+
+        .video-checkbox {
+            flex-shrink: 0;
+            margin-top: 0.2rem;
+        }
+
+        .video-checkbox input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .video-checkbox input[type="checkbox"]:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .video-item.updating {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .panel-actions button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+            background: #6c757d;
+        }
+
+        .video-rank {
+            flex-shrink: 0;
+            width: 30px;
+            height: 30px;
+            background: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .video-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .video-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+            word-wrap: break-word;
+        }
+
+        .video-meta {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .video-channel {
+            color: #7f8c8d;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .cm-badge {
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: white;
+            background: #e74c3c;
+        }
+
+        .video-reason {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            font-style: italic;
+        }
+
+        .preview-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 4rem;
+            color: #6c757d;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 4px;
+            border: 1px solid #f5c6cb;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem;
+            color: #6c757d;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #495057;
+        }
+
+        .stats {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .update-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #007bff;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .loading-spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .container {
+                padding: 1rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .filter-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .video-item {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .video-meta {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>CM Reviewer</h1>
+        <p>週次トレンド編集 - チェックボックス操作とHTMLプレビュー</p>
+    </div>
+
+    <div class="container">
+        <div class="controls">
+            <div class="filter-group">
+                <label for="analysisSelect">分析ID:</label>
+                <select id="analysisSelect">
+                    <option value="">分析IDを選択してください</option>
+                </select>
+                <button class="btn" onclick="loadAnalysisList()">🔄 更新</button>
+            </div>
+            
+            <div class="filter-group">
+                <div class="stats" id="statsDisplay">
+                    総動画数: 0件 | チェック済み: 0件
+                </div>
+                <div id="updateStatus" class="update-status" style="display: none;">
+                    <span class="loading-spinner">🔄</span> 更新中...
+                </div>
+            </div>
+            
+            <div class="nav-links">
+                <a href="weekly.html" class="btn">📊 週次トレンド一覧</a>
+                <a href="preview.html" class="btn">📺 動画データプレビュー</a>
+            </div>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            <p>データを読み込み中...</p>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div class="main-content" id="mainContent" style="display: none;">
+            <div class="left-panel">
+                <div class="panel-header">
+                    <div class="panel-title">📋 動画リスト</div>
+                    <div class="panel-actions">
+                        <button class="btn btn-small" onclick="checkAll()">全選択</button>
+                        <button class="btn btn-small" onclick="uncheckAll()">全解除</button>
+                    </div>
+                </div>
+                <div class="panel-content">
+                    <div id="videoList" class="video-list"></div>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="panel-header">
+                    <div class="panel-title">📱 HTMLプレビュー</div>
+                    <div class="panel-actions">
+                        <button class="btn btn-small" onclick="openPreviewInNewTab()">新しいタブで開く</button>
+                    </div>
+                </div>
+                <div class="panel-content">
+                    <iframe id="previewIframe" class="preview-iframe"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwH79FXuiOUq1ppJ296C731RFJ-JD7gGMCTWJT2pPahO0m0Pe2nZZL_E_0MHxxkuknQWA/exec';
+        
+        let currentAnalysisId = null;
+        let currentVideos = [];
+        let currentHtmlUrl = null;
+        let isUpdating = false;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('ページ読み込み完了');
+            loadAnalysisList();
+        });
+
+        async function loadAnalysisList() {
+            try {
+                showLoading(true);
+                hideError();
+                
+                const response = await fetch(`${GAS_WEB_APP_URL}?action=getAnalysisList`);
+                const result = await response.json();
+                
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+                
+                const select = document.getElementById('analysisSelect');
+                select.innerHTML = '<option value="">分析IDを選択してください</option>';
+                
+                result.data.forEach(analysis => {
+                    const option = document.createElement('option');
+                    option.value = analysis.analysisId;
+                    option.textContent = `${analysis.analysisId} (${new Date(analysis.createdAt).toLocaleDateString('ja-JP')})`;
+                    select.appendChild(option);
+                });
+                
+                // 選択変更時のイベントリスナー
+                select.onchange = function() {
+                    if (this.value) {
+                        loadWeeklyTrendData(this.value);
+                    } else {
+                        hideMainContent();
+                    }
+                };
+                
+            } catch (error) {
+                console.error('分析リスト取得エラー:', error);
+                showError('分析リストの読み込みに失敗しました: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function loadWeeklyTrendData(analysisId) {
+            try {
+                showLoading(true);
+                hideError();
+                currentAnalysisId = analysisId;
+                
+                const response = await fetch(`${GAS_WEB_APP_URL}?action=getWeeklyTrendData&analysisId=${encodeURIComponent(analysisId)}`);
+                const result = await response.json();
+                
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+                
+                currentVideos = result.data;
+                renderVideoList(currentVideos);
+                updateStats();
+                showMainContent();
+                
+                // 初期プレビューを表示
+                await updatePreview();
+                
+                console.log(`週次トレンドデータ読み込み完了: ${currentVideos.length}件`);
+                
+            } catch (error) {
+                console.error('週次トレンドデータ取得エラー:', error);
+                showError('週次トレンドデータの読み込みに失敗しました: ' + error.message);
+                hideMainContent();
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function renderVideoList(videos) {
+            const container = document.getElementById('videoList');
+            
+            if (videos.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>動画データが見つかりません</h3>
+                        <p>選択した分析IDに対応する動画データがありません。</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = videos.map((video, index) => `
+                <div class="video-item ${video.checked ? 'checked' : ''}" data-video-index="${index}">
+                    <div class="video-checkbox">
+                        <input type="checkbox" 
+                               ${video.checked ? 'checked' : ''}
+                               onchange="toggleVideoCheck(${index}, this.checked)"
+                               id="video-${index}">
+                    </div>
+                    <div class="video-rank">${video.rank}</div>
+                    <div class="video-info">
+                        <div class="video-title">${video.title}</div>
+                        <div class="video-meta">
+                            <div class="video-channel">${video.channelTitle}</div>
+                            <div class="cm-badge">CM確率 ${video.cmProbability}%</div>
+                        </div>
+                        <div class="video-reason">${video.reason}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function toggleVideoCheck(index, checked) {
+            if (index >= 0 && index < currentVideos.length && !isUpdating) {
+                currentVideos[index].checked = checked;
+                
+                // 視覚的な更新
+                const videoItem = document.querySelector(`[data-video-index="${index}"]`);
+                if (checked) {
+                    videoItem.classList.add('checked');
+                } else {
+                    videoItem.classList.remove('checked');
+                }
+                
+                updateStats();
+                
+                // チェックボックスを一時的に無効化
+                const checkbox = document.getElementById(`video-${index}`);
+                if (checkbox) {
+                    checkbox.disabled = true;
+                }
+                
+                // 即座にシートとプレビューを更新
+                await updateSingleCheckboxAndPreview(index, checked);
+                
+                // チェックボックスを再有効化
+                if (checkbox && !isUpdating) {
+                    checkbox.disabled = false;
+                }
+            }
+        }
+
+        async function checkAll() {
+            if (isUpdating) return;
+            
+            currentVideos.forEach((video, index) => {
+                video.checked = true;
+                const checkbox = document.getElementById(`video-${index}`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+                const videoItem = document.querySelector(`[data-video-index="${index}"]`);
+                if (videoItem) {
+                    videoItem.classList.add('checked');
+                }
+            });
+            updateStats();
+            
+            // 全チェックボックスを一括更新
+            await updateAllCheckboxesAndPreview();
+        }
+
+        async function uncheckAll() {
+            if (isUpdating) return;
+            
+            currentVideos.forEach((video, index) => {
+                video.checked = false;
+                const checkbox = document.getElementById(`video-${index}`);
+                if (checkbox) {
+                    checkbox.checked = false;
+                }
+                const videoItem = document.querySelector(`[data-video-index="${index}"]`);
+                if (videoItem) {
+                    videoItem.classList.remove('checked');
+                }
+            });
+            updateStats();
+            
+            // 全チェックボックスを一括更新
+            await updateAllCheckboxesAndPreview();
+        }
+
+        function updateStats() {
+            const total = currentVideos.length;
+            const checked = currentVideos.filter(v => v.checked).length;
+            
+            document.getElementById('statsDisplay').textContent = 
+                `総動画数: ${total}件 | チェック済み: ${checked}件`;
+        }
+
+        async function updateSingleCheckboxAndPreview(index, checked) {
+            if (!currentAnalysisId || index < 0 || index >= currentVideos.length) {
+                return;
+            }
+
+            try {
+                showUpdateStatus(true);
+                hideError();
+                
+                const video = currentVideos[index];
+                const checkboxUpdates = [{
+                    rowIndex: video.rowIndex,
+                    checked: checked
+                }];
+                
+                // シートを更新
+                const formData = new FormData();
+                formData.append('action', 'updateCheckboxes');
+                formData.append('checkboxUpdates', JSON.stringify(checkboxUpdates));
+                
+                const updateResponse = await fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const updateResult = await updateResponse.json();
+                
+                if (updateResult.error) {
+                    throw new Error(updateResult.error);
+                }
+                
+                // プレビューを更新
+                await updatePreview();
+                
+                console.log(`チェックボックス更新完了: ${video.title} = ${checked}`);
+                
+            } catch (error) {
+                console.error('チェックボックス更新エラー:', error);
+                showError('チェックボックスの更新に失敗しました: ' + error.message);
+                
+                // エラー時は元の状態に戻す
+                currentVideos[index].checked = !checked;
+                const checkbox = document.getElementById(`video-${index}`);
+                if (checkbox) {
+                    checkbox.checked = !checked;
+                    checkbox.disabled = false; // エラー時は必ず再有効化
+                }
+                const videoItem = document.querySelector(`[data-video-index="${index}"]`);
+                if (videoItem) {
+                    if (!checked) {
+                        videoItem.classList.add('checked');
+                    } else {
+                        videoItem.classList.remove('checked');
+                    }
+                }
+                updateStats();
+                
+            } finally {
+                showUpdateStatus(false);
+            }
+        }
+
+        async function updateAllCheckboxesAndPreview() {
+            if (!currentAnalysisId || currentVideos.length === 0) {
+                return;
+            }
+
+            try {
+                showUpdateStatus(true);
+                hideError();
+                
+                const checkboxUpdates = currentVideos.map(video => ({
+                    rowIndex: video.rowIndex,
+                    checked: video.checked
+                }));
+                
+                // シートを更新
+                const formData = new FormData();
+                formData.append('action', 'updateCheckboxes');
+                formData.append('checkboxUpdates', JSON.stringify(checkboxUpdates));
+                
+                const updateResponse = await fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const updateResult = await updateResponse.json();
+                
+                if (updateResult.error) {
+                    throw new Error(updateResult.error);
+                }
+                
+                // プレビューを更新
+                await updatePreview();
+                
+                console.log(`全チェックボックス更新完了: ${updateResult.updatedCount}件`);
+                
+            } catch (error) {
+                console.error('全チェックボックス更新エラー:', error);
+                showError('チェックボックスの一括更新に失敗しました: ' + error.message);
+            } finally {
+                showUpdateStatus(false);
+            }
+        }
+
+        async function updatePreview() {
+            if (!currentAnalysisId) {
+                return;
+            }
+
+            const checkedCount = currentVideos.filter(v => v.checked).length;
+            
+            if (checkedCount === 0) {
+                // チェック済み動画がない場合は空のプレビューを表示
+                const iframe = document.getElementById('previewIframe');
+                const emptyHtml = `
+                    <!DOCTYPE html>
+                    <html lang="ja">
+                    <head>
+                        <meta charset="UTF-8">
+                        <title>プレビュー</title>
+                        <style>
+                            body { 
+                                font-family: system-ui, -apple-system, sans-serif; 
+                                text-align: center; 
+                                padding: 4rem; 
+                                color: #6c757d; 
+                            }
+                            h3 { color: #495057; margin-bottom: 1rem; }
+                        </style>
+                    </head>
+                    <body>
+                        <h3>チェックされた動画がありません</h3>
+                        <p>左側のリストから動画をチェックしてください。</p>
+                    </body>
+                    </html>
+                `;
+                
+                const blob = new Blob([emptyHtml], { type: 'text/html; charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                
+                if (currentHtmlUrl) {
+                    URL.revokeObjectURL(currentHtmlUrl);
+                }
+                
+                currentHtmlUrl = url;
+                iframe.src = url;
+                return;
+            }
+
+            try {
+                const response = await fetch(`${GAS_WEB_APP_URL}?action=generateCheckedHtml&analysisId=${encodeURIComponent(currentAnalysisId)}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status}`);
+                }
+                
+                const htmlContent = await response.text();
+                
+                // JSONエラーレスポンスかチェック
+                if (htmlContent.trim().startsWith('{') && htmlContent.includes('"error"')) {
+                    const errorData = JSON.parse(htmlContent);
+                    throw new Error(errorData.error);
+                }
+                
+                // iframeにHTMLコンテンツを設定
+                const iframe = document.getElementById('previewIframe');
+                const blob = new Blob([htmlContent], { type: 'text/html; charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                
+                // 前のURLをクリーンアップ
+                if (currentHtmlUrl) {
+                    URL.revokeObjectURL(currentHtmlUrl);
+                }
+                
+                currentHtmlUrl = url;
+                iframe.src = url;
+                
+            } catch (error) {
+                console.error('プレビュー更新エラー:', error);
+                throw error; // 呼び出し元でエラーハンドリング
+            }
+        }
+
+        async function openPreviewInNewTab() {
+            if (!currentAnalysisId) {
+                showError('分析IDが選択されていません');
+                return;
+            }
+
+            try {
+                showLoading(true);
+                
+                const response = await fetch(`${GAS_WEB_APP_URL}?action=generateCheckedHtml&analysisId=${encodeURIComponent(currentAnalysisId)}`);
+                const htmlContent = await response.text();
+                
+                if (htmlContent.includes('"error"')) {
+                    const errorData = JSON.parse(htmlContent);
+                    throw new Error(errorData.error);
+                }
+                
+                const newWindow = window.open('', '_blank');
+                newWindow.document.open();
+                newWindow.document.write(htmlContent);
+                newWindow.document.close();
+                
+            } catch (error) {
+                console.error('新しいタブで開く際のエラー:', error);
+                showError('新しいタブでの表示に失敗しました: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function showMainContent() {
+            document.getElementById('mainContent').style.display = 'grid';
+        }
+
+        function hideMainContent() {
+            document.getElementById('mainContent').style.display = 'none';
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        function showUpdateStatus(show) {
+            document.getElementById('updateStatus').style.display = show ? 'flex' : 'none';
+            isUpdating = show;
+            
+            // 全チェックボックスの有効/無効を切り替え
+            toggleAllCheckboxes(!show);
+            
+            // 全選択・全解除ボタンの有効/無効を切り替え
+            toggleControlButtons(!show);
+        }
+
+        function toggleAllCheckboxes(enabled) {
+            const checkboxes = document.querySelectorAll('.video-checkbox input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.disabled = !enabled;
+            });
+            
+            // 動画アイテムにupdatingクラスを追加/削除
+            const videoItems = document.querySelectorAll('.video-item');
+            videoItems.forEach(item => {
+                if (enabled) {
+                    item.classList.remove('updating');
+                } else {
+                    item.classList.add('updating');
+                }
+            });
+        }
+
+        function toggleControlButtons(enabled) {
+            const buttons = document.querySelectorAll('.panel-actions button');
+            buttons.forEach(button => {
+                button.disabled = !enabled;
+            });
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
